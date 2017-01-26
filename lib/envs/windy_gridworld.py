@@ -8,6 +8,7 @@ RIGHT = 1
 DOWN = 2
 LEFT = 3
 
+
 class WindyGridworldEnv(discrete.DiscreteEnv):
 
     metadata = {'render.modes': ['human', 'ansi']}
@@ -20,7 +21,8 @@ class WindyGridworldEnv(discrete.DiscreteEnv):
         return coord
 
     def _calculate_transition_prob(self, current, delta, winds):
-        new_position = np.array(current) + np.array(delta) + np.array([-1, 0]) * winds[tuple(current)]
+        new_position = np.array(current) + np.array(delta) + \
+            np.array([-1, 0]) * winds[tuple(current)]
         new_position = self._limit_coordinates(new_position).astype(int)
         new_state = np.ravel_multi_index(tuple(new_position), self.shape)
         is_done = tuple(new_position) == (3, 7)
@@ -34,22 +36,26 @@ class WindyGridworldEnv(discrete.DiscreteEnv):
 
         # Wind strength
         winds = np.zeros(self.shape)
-        winds[:,[3,4,5,8]] = 1
-        winds[:,[6,7]] = 2
+        winds[:, [3, 4, 5, 8]] = 1
+        winds[:, [6, 7]] = 2
 
         # Calculate transition probabilities
         P = {}
         for s in range(nS):
             position = np.unravel_index(s, self.shape)
-            P[s] = { a : [] for a in range(nA) }
-            P[s][UP] = self._calculate_transition_prob(position, [-1, 0], winds)
-            P[s][RIGHT] = self._calculate_transition_prob(position, [0, 1], winds)
-            P[s][DOWN] = self._calculate_transition_prob(position, [1, 0], winds)
-            P[s][LEFT] = self._calculate_transition_prob(position, [0, -1], winds)
+            P[s] = {a: [] for a in range(nA)}
+            P[s][UP] = self._calculate_transition_prob(
+                position, [-1, 0], winds)
+            P[s][RIGHT] = self._calculate_transition_prob(
+                position, [0, 1], winds)
+            P[s][DOWN] = self._calculate_transition_prob(
+                position, [1, 0], winds)
+            P[s][LEFT] = self._calculate_transition_prob(
+                position, [0, -1], winds)
 
         # We always start in state (3, 0)
         isd = np.zeros(nS)
-        isd[np.ravel_multi_index((3,0), self.shape)] = 1.0
+        isd[np.ravel_multi_index((3, 0), self.shape)] = 1.0
 
         super(WindyGridworldEnv, self).__init__(nS, nA, P, isd)
 
@@ -64,7 +70,7 @@ class WindyGridworldEnv(discrete.DiscreteEnv):
             # print(self.s)
             if self.s == s:
                 output = " x "
-            elif position == (3,7):
+            elif position == (3, 7):
                 output = " T "
             else:
                 output = " o "

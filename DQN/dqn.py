@@ -7,7 +7,7 @@ import sys
 import tensorflow as tf
 
 if "../" not in sys.path:
-  sys.path.append("../")
+    sys.path.append("../")
 
 from lib import plotting
 from collections import deque, namedtuple
@@ -17,16 +17,20 @@ env = gym.envs.make("Breakout-v0")
 # Atari Actions: 0 (noop), 1 (fire), 2 (left) and 3 (right) are valid actions
 VALID_ACTIONS = [0, 1, 2, 3]
 
+
 class StateProcessor():
     """
     Processes a raw Atari iamges. Resizes it and converts it to grayscale.
     """
+
     def __init__(self):
         # Build the Tensorflow graph
         with tf.variable_scope("state_processor"):
-            self.input_state = tf.placeholder(shape=[210, 160, 3], dtype=tf.uint8)
+            self.input_state = tf.placeholder(
+                shape=[210, 160, 3], dtype=tf.uint8)
             self.output = tf.image.rgb_to_grayscale(self.input_state)
-            self.output = tf.image.crop_to_bounding_box(self.output, 34, 0, 160, 160)
+            self.output = tf.image.crop_to_bounding_box(
+                self.output, 34, 0, 160, 160)
             self.output = tf.image.resize_images(
                 self.output, 84, 84, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             self.output = tf.squeeze(self.output)
@@ -40,7 +44,8 @@ class StateProcessor():
         Returns:
             A processed [84, 84, 1] state representing grayscale values.
         """
-        return sess.run(self.output, { self.input_state: state })
+        return sess.run(self.output, {self.input_state: state})
+
 
 class Estimator():
     """Q-Value Estimator neural network.
@@ -56,7 +61,8 @@ class Estimator():
             # Build the graph
             self._build_model()
             if summaries_dir:
-                summary_dir = os.path.join(summaries_dir, "summaries_{}".format(scope))
+                summary_dir = os.path.join(
+                    summaries_dir, "summaries_{}".format(scope))
                 if not os.path.exists(summary_dir):
                     os.makedirs(summary_dir)
                 self.summary_writer = tf.train.SummaryWriter(summary_dir)
@@ -68,11 +74,13 @@ class Estimator():
 
         # Placeholders for our input
         # Our input are 4 RGB frames of shape 160, 160 each
-        self.X_pl = tf.placeholder(shape=[None, 84, 84, 4], dtype=tf.uint8, name="X")
+        self.X_pl = tf.placeholder(
+            shape=[None, 84, 84, 4], dtype=tf.uint8, name="X")
         # The TD target value
         self.y_pl = tf.placeholder(shape=[None], dtype=tf.float32, name="y")
         # Integer id of which action was selected
-        self.actions_pl = tf.placeholder(shape=[None], dtype=tf.int32, name="actions")
+        self.actions_pl = tf.placeholder(
+            shape=[None], dtype=tf.int32, name="actions")
 
         X = tf.to_float(self.X_pl) / 255.0
         batch_size = tf.shape(self.X_pl)[0]
@@ -88,11 +96,14 @@ class Estimator():
         # Fully connected layers
         flattened = tf.contrib.layers.flatten(conv3)
         fc1 = tf.contrib.layers.fully_connected(flattened, 512)
-        self.predictions = tf.contrib.layers.fully_connected(fc1, len(VALID_ACTIONS))
+        self.predictions = tf.contrib.layers.fully_connected(
+            fc1, len(VALID_ACTIONS))
 
         # Get the predictions for the chosen actions only
-        gather_indices = tf.range(batch_size) * tf.shape(self.predictions)[1] + self.actions_pl
-        self.action_predictions = tf.gather(tf.reshape(self.predictions, [-1]), gather_indices)
+        gather_indices = tf.range(
+            batch_size) * tf.shape(self.predictions)[1] + self.actions_pl
+        self.action_predictions = tf.gather(
+            tf.reshape(self.predictions, [-1]), gather_indices)
 
         # Calcualte the loss
         self.losses = tf.squared_difference(self.y_pl, self.action_predictions)
@@ -100,7 +111,8 @@ class Estimator():
 
         # Optimizer Parameters from original paper
         self.optimizer = tf.train.RMSPropOptimizer(0.00025, 0.99, 0.0, 1e-6)
-        self.train_op = self.optimizer.minimize(self.loss, global_step=tf.contrib.framework.get_global_step())
+        self.train_op = self.optimizer.minimize(
+            self.loss, global_step=tf.contrib.framework.get_global_step())
 
         # Summaries for Tensorboard
         self.summaries = tf.merge_summary([
@@ -109,7 +121,6 @@ class Estimator():
             tf.histogram_summary("q_values_hist", self.predictions),
             tf.scalar_summary("max_q_value", tf.reduce_max(self.predictions))
         ])
-
 
     def predict(self, sess, s):
         """
@@ -123,7 +134,7 @@ class Estimator():
           Tensor of shape [batch_size, NUM_VALID_ACTIONS] containing the estimated 
           action values.
         """
-        return sess.run(self.predictions, { self.X_pl: s })
+        return sess.run(self.predictions, {self.X_pl: s})
 
     def update(self, sess, s, a, y):
         """
@@ -138,13 +149,15 @@ class Estimator():
         Returns:
           The calculated loss on the batch.
         """
-        feed_dict = { self.X_pl: s, self.y_pl: y, self.actions_pl: a }
+        feed_dict = {self.X_pl: s, self.y_pl: y, self.actions_pl: a}
         summaries, global_step, _, loss = sess.run(
-            [self.summaries, tf.contrib.framework.get_global_step(), self.train_op, self.loss],
+            [self.summaries, tf.contrib.framework.get_global_step(),
+             self.train_op, self.loss],
             feed_dict)
         if self.summary_writer:
             self.summary_writer.add_summary(summaries, global_step)
         return loss
+
 
 def copy_model_parameters(sess, estimator1, estimator2):
     """
@@ -155,9 +168,11 @@ def copy_model_parameters(sess, estimator1, estimator2):
       estimator1: Estimator to copy the paramters from
       estimator2: Estimator to copy the parameters to
     """
-    e1_params = [t for t in tf.trainable_variables() if t.name.startswith(estimator1.scope)]
+    e1_params = [t for t in tf.trainable_variables(
+    ) if t.name.startswith(estimator1.scope)]
     e1_params = sorted(e1_params, key=lambda v: v.name)
-    e2_params = [t for t in tf.trainable_variables() if t.name.startswith(estimator2.scope)]
+    e2_params = [t for t in tf.trainable_variables(
+    ) if t.name.startswith(estimator2.scope)]
     e2_params = sorted(e2_params, key=lambda v: v.name)
 
     update_ops = []
@@ -235,7 +250,8 @@ def deep_q_learning(sess,
         An EpisodeStats object with two numpy arrays for episode_lengths and episode_rewards.
     """
 
-    Transition = namedtuple("Transition", ["state", "action", "reward", "next_state", "done"])
+    Transition = namedtuple(
+        "Transition", ["state", "action", "reward", "next_state", "done"])
 
     # The replay memory
     replay_memory = []
@@ -278,12 +294,15 @@ def deep_q_learning(sess,
     state = state_processor.process(sess, state)
     state = np.stack([state] * 4, axis=2)
     for i in range(replay_memory_init_size):
-        action_probs = policy(sess, state, epsilons[min(total_t, epsilon_decay_steps-1)])
+        action_probs = policy(sess, state, epsilons[
+                              min(total_t, epsilon_decay_steps - 1)])
         action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
         next_state, reward, done, _ = env.step(VALID_ACTIONS[action])
         next_state = state_processor.process(sess, next_state)
-        next_state = np.append(state[:,:,1:], np.expand_dims(next_state, 2), axis=2)
-        replay_memory.append(Transition(state, action, reward, next_state, done))
+        next_state = np.append(
+            state[:, :, 1:], np.expand_dims(next_state, 2), axis=2)
+        replay_memory.append(Transition(
+            state, action, reward, next_state, done))
         if done:
             state = env.reset()
             state = state_processor.process(sess, state)
@@ -311,7 +330,7 @@ def deep_q_learning(sess,
         for t in itertools.count():
 
             # Epsilon for this time step
-            epsilon = epsilons[min(total_t, epsilon_decay_steps-1)]
+            epsilon = epsilons[min(total_t, epsilon_decay_steps - 1)]
 
             # Add epsilon to Tensorboard
             episode_summary = tf.Summary()
@@ -325,22 +344,25 @@ def deep_q_learning(sess,
 
             # Print out which step we're on, useful for debugging.
             print("\rStep {} ({}) @ Episode {}/{}, loss: {}".format(
-                    t, total_t, i_episode + 1, num_episodes, loss), end="")
+                t, total_t, i_episode + 1, num_episodes, loss), end="")
             sys.stdout.flush()
 
             # Take a step
             action_probs = policy(sess, state, epsilon)
-            action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
+            action = np.random.choice(
+                np.arange(len(action_probs)), p=action_probs)
             next_state, reward, done, _ = env.step(VALID_ACTIONS[action])
             next_state = state_processor.process(sess, next_state)
-            next_state = np.append(state[:,:,1:], np.expand_dims(next_state, 2), axis=2)
+            next_state = np.append(
+                state[:, :, 1:], np.expand_dims(next_state, 2), axis=2)
 
             # If our replay memory is full, pop the first element
             if len(replay_memory) == replay_memory_size:
                 replay_memory.pop(0)
 
             # Save transition to replay memory
-            replay_memory.append(Transition(state, action, reward, next_state, done))   
+            replay_memory.append(Transition(
+                state, action, reward, next_state, done))
 
             # Update statistics
             stats.episode_rewards[i_episode] += reward
@@ -348,18 +370,22 @@ def deep_q_learning(sess,
 
             # Sample a minibatch from the replay memory
             samples = random.sample(replay_memory, batch_size)
-            states_batch, action_batch, reward_batch, next_states_batch, done_batch = map(np.array, zip(*samples))
+            states_batch, action_batch, reward_batch, next_states_batch, done_batch = map(
+                np.array, zip(*samples))
 
             # Calculate q values and targets (Double DQN)
             q_values_next = q_estimator.predict(sess, next_states_batch)
             best_actions = np.argmax(q_values_next, axis=1)
-            q_values_next_target = target_estimator.predict(sess, next_states_batch)
+            q_values_next_target = target_estimator.predict(
+                sess, next_states_batch)
             targets_batch = reward_batch + np.invert(done_batch).astype(np.float32) * \
-                discount_factor * q_values_next_target[np.arange(batch_size), best_actions]
+                discount_factor * \
+                q_values_next_target[np.arange(batch_size), best_actions]
 
             # Perform gradient descent update
             states_batch = np.array(states_batch)
-            loss = q_estimator.update(sess, states_batch, action_batch, targets_batch)
+            loss = q_estimator.update(
+                sess, states_batch, action_batch, targets_batch)
 
             if done:
                 break
@@ -369,14 +395,16 @@ def deep_q_learning(sess,
 
         # Add summaries to tensorboard
         episode_summary = tf.Summary()
-        episode_summary.value.add(simple_value=stats.episode_rewards[i_episode], node_name="episode_reward", tag="episode_reward")
-        episode_summary.value.add(simple_value=stats.episode_lengths[i_episode], node_name="episode_length", tag="episode_length")
+        episode_summary.value.add(simple_value=stats.episode_rewards[
+                                  i_episode], node_name="episode_reward", tag="episode_reward")
+        episode_summary.value.add(simple_value=stats.episode_lengths[
+                                  i_episode], node_name="episode_length", tag="episode_length")
         q_estimator.summary_writer.add_summary(episode_summary, total_t)
         q_estimator.summary_writer.flush()
 
         yield total_t, plotting.EpisodeStats(
-            episode_lengths=stats.episode_lengths[:i_episode+1],
-            episode_rewards=stats.episode_rewards[:i_episode+1])
+            episode_lengths=stats.episode_lengths[:i_episode + 1],
+            episode_rewards=stats.episode_rewards[:i_episode + 1])
 
     env.monitor.close()
     return stats
@@ -416,4 +444,3 @@ with tf.Session() as sess:
                                     batch_size=32):
 
         print("\nEpisode Reward: {}".format(stats.episode_rewards[-1]))
-
