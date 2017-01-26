@@ -37,13 +37,15 @@ class PolicyMonitor(object):
     self.video_dir = os.path.join(summary_writer.get_logdir(), "../videos")
     self.video_dir = os.path.abspath(self.video_dir)
 
-    self.env = Monitor(env, directory=self.video_dir, video_callable=lambda x: True, resume=True)
+    self.env = Monitor(env, directory=self.video_dir,
+                       video_callable=lambda x: True, resume=True)
     self.global_policy_net = policy_net
     self.summary_writer = summary_writer
     self.saver = saver
     self.sp = StateProcessor()
 
-    self.checkpoint_path = os.path.abspath(os.path.join(summary_writer.get_logdir(), "../checkpoints/model"))
+    self.checkpoint_path = os.path.abspath(os.path.join(
+        summary_writer.get_logdir(), "../checkpoints/model"))
 
     try:
       os.makedirs(self.video_dir)
@@ -56,8 +58,11 @@ class PolicyMonitor(object):
 
     # Op to copy params from global policy/value net parameters
     self.copy_params_op = make_copy_params_op(
-      tf.contrib.slim.get_variables(scope="global", collection=tf.GraphKeys.TRAINABLE_VARIABLES),
-      tf.contrib.slim.get_variables(scope="policy_eval", collection=tf.GraphKeys.TRAINABLE_VARIABLES))
+      tf.contrib.slim.get_variables(
+          scope="global", collection=tf.GraphKeys.TRAINABLE_VARIABLES),
+      tf.contrib.slim.get_variables(
+          scope="policy_eval", collection=tf.GraphKeys.TRAINABLE_VARIABLES),
+    )
 
   def _policy_net_predict(self, state, sess):
     feed_dict = { self.policy_net.states: [state] }
