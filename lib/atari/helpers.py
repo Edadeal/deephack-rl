@@ -22,7 +22,7 @@ class AtariEnvWrapper(object):
             done = True
 
         # Clip rewards to [-1,1]
-        reward = max(min(reward, 1), -1)
+        #reward = max(min(reward, 1), -1)
 
         return next_state, reward, done, info
 

@@ -138,9 +138,11 @@ class Worker(object):
         transitions = []
         for _ in range(n):
             # Take a step
-            action_probs = self._policy_net_predict(self.state, sess)
-            action = np.random.choice(
-                np.arange(len(action_probs)), p=action_probs)
+            if np.random.uniform() < 0.1:
+                action = np.random.randint(0, self.env.actions_state.n)
+            else:
+                action_probs = self._policy_net_predict(self.state, sess)
+                action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
             next_state, reward, done, _ = self.env.step(action)
             next_state = atari_helpers.atari_make_next_state(
                 self.state, self.sp.process(next_state))

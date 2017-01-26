@@ -29,4 +29,4 @@ class StateProcessor():
             A processed [84, 84, 1] state representing grayscale values.
         """
         sess = sess or tf.get_default_session()
-        return sess.run(self.output, { self.input_state: state })
+        return sess.run(self.output, {self.input_state: state[30:-10]})

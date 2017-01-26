@@ -15,9 +15,9 @@ def build_shared_network(X, add_summaries=False):
     """
 
     # Three convolutional layers
-    conv1 = tf.contrib.layers.conv2d(
+    conv1 = tf.contrib.layers.convolution2d(
         X, 16, 8, 4, activation_fn=tf.nn.relu, scope="conv1")
-    conv2 = tf.contrib.layers.conv2d(
+    conv2 = tf.contrib.layers.convolution2d(
         conv1, 32, 4, 2, activation_fn=tf.nn.relu, scope="conv2")
 
     # Fully connected layer
