@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/ei-grad/repos/reinforcement-learning/model/checkpoints/model"
+all_model_checkpoint_paths: "/home/ei-grad/repos/reinforcement-learning/model/checkpoints/model"
